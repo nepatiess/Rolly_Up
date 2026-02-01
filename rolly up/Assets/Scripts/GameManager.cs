@@ -7,7 +7,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance;
 
     public bool isGameStart;
-
+    bool gameOver;
 
     private void Awake()
     {
@@ -15,5 +15,11 @@ public class GameManager : MonoBehaviour
             Instance = this;
         else
             Destroy(Instance);
+    }
+
+    public void GameOver(int EarnedPoints)
+    {
+        gameOver = true;
+        Debug.Log("Earn Points : " + EarnedPoints);
     }
 }
