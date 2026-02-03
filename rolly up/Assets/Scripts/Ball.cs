@@ -4,26 +4,21 @@ using UnityEngine;
 
 public class Ball : MonoBehaviour
 {
-    [Header("Temel Ayarlar")]
     [SerializeField] float gravitionalForce = 1.0f;
     [SerializeField] float range = 0.3f;
     [SerializeField] SphereCollider collisionCollider;
     [SerializeField] Rigidbody rb;
 
-    [Header("Level ve Hedef Ayarları")]
+
     [SerializeField] int totalLevelCubes = 100;
     [SerializeField] Transform startLinePoint;
     [SerializeField] Transform finishLineMaxPoint;
 
-    [Header("Yumuşak Bitiş Ayarları (Soft Landing)")]
-    [Tooltip("Topun maksimum hızı.")]
     [SerializeField] float maxRollSpeed = 12f;
 
-    [Tooltip("Hedefe kaç metre kala yavaşlamaya başlasın?")]
-    [SerializeField] float brakingDistance = 20f; // Daha erken frenlemeye başlasın
+    [SerializeField] float brakingDistance = 20f;
 
-    [Tooltip("Topun durmadan hemen önceki en yavaş hızı (Çok düşük olmalı)")]
-    [SerializeField] float minCrawlSpeed = 0.5f; // 2 yerine 0.5 yaptık, sürünerek dursun
+    [SerializeField] float minCrawlSpeed = 0.5f;
 
     Vector3 gravitionalDirecton;
     Collider[] cubes;
@@ -47,11 +42,9 @@ public class Ball : MonoBehaviour
         }
         else if (isRollingToTarget)
         {
-            // --- İPEK GİBİ YUMUŞAK DURUŞ MANTIĞI ---
 
             float distance = targetPosition.z - transform.position.z;
 
-            // Stop mesafesini çok çok küçülttük (Milimetrik yanaşsın)
             if (distance <= 0.05f)
             {
                 StopBall();
@@ -62,25 +55,18 @@ public class Ball : MonoBehaviour
 
                 if (distance < brakingDistance)
                 {
-                    // 0 ile 1 arasında bir oran (1 = uzak, 0 = hedefte)
                     float ratio = distance / brakingDistance;
 
-                    // MATEMATİKSEL SİHİR BURADA:
-                    // Mathf.Sqrt kullanarak hızı "kök" eğrisiyle düşürüyoruz.
-                    // Bu, topun başta hızlı yavaşlamasını, sona doğru ise çok yavaş süzülmesini sağlar.
                     float curveFactor = Mathf.Sqrt(ratio);
 
-                    // Hızı min ve max arasında bu eğriye göre ayarla
                     currentSpeed = Mathf.Lerp(minCrawlSpeed, maxRollSpeed, curveFactor);
                 }
 
-                // Hızı Uygula
                 Vector3 targetVel = rb.velocity;
                 targetVel.z = currentSpeed;
                 targetVel.x = 0;
                 rb.velocity = targetVel;
 
-                // Dönme hızını da aynı oranda yavaşlat ki kayıyormuş gibi görünmesin
                 float rotationSpeed = currentSpeed * 30f;
                 transform.Rotate(Vector3.forward, rotationSpeed * Time.fixedDeltaTime);
             }
@@ -91,7 +77,7 @@ public class Ball : MonoBehaviour
     {
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
-        transform.position = new Vector3(transform.position.x, transform.position.y, targetPosition.z); // Tam noktaya "tık" diye oturt
+        transform.position = new Vector3(transform.position.x, transform.position.y, targetPosition.z); 
         isRollingToTarget = false;
 
         CalculateAndFinish();
@@ -125,11 +111,16 @@ public class Ball : MonoBehaviour
                 other.attachedRigidbody.isKinematic = true;
                 other.gameObject.transform.SetParent(transform);
                 AddCube();
+                GameManager.Instance.PlayAudio(2);
             }
         }
 
         if (other.CompareTag("Finish"))
         {
+            // --- SES KODU BURAYA EKLENDİ ---
+            // Inspector'dan girdiğin index numarası buraya otomatik gelir.
+            GameManager.Instance.PlayAudio(5);
+
             GameManager.Instance.isGameStart = false;
             ScatterCubes();
 
