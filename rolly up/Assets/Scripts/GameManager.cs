@@ -20,6 +20,7 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
+        ScenesFirstOptions();
         // Singleton yapýsýný saðlama alýyoruz
         if (Instance == null)
         {
@@ -51,19 +52,15 @@ public class GameManager : MonoBehaviour
 
     void Win(int EarnedPer)
     {
+        OpenPanel(3);
         PlayerPrefs.SetInt("Record", PlayerPrefs.GetInt("Record") + EarnedPer * 2);
         PlayerPrefs.SetInt("Coin", PlayerPrefs.GetInt("Coin") + (EarnedPer * 2) / 10);
         Debug.Log("Earned Points: " + EarnedPer * 2);
-        //ses oynatýlabilir
-        // panel çýakacak
-        // diðer iþlemler
     }
 
     void Lose()
     {
-        // ses
-        // panel çýkacak
-        //diðer iþlemler
+        OpenPanel(4);
         Debug.Log("Lose....");
     }
 
@@ -158,9 +155,82 @@ public class GameManager : MonoBehaviour
                 ClosePanel(5);
                 break;
 
-            //GameMusic
-            //GameEfect
+            case "GameMusic":
+                PlayAudio(1);
+                if (PlayerPrefs.GetInt("GameMusic") == 0)
+                {
+                    PlayerPrefs.SetInt("GameMusic", 1);
+                    ButtonPic[0].sprite = SpriteObjects[0];
+                    Musics[0].mute = false;
+                }
+                else
+                {
+                    PlayerPrefs.SetInt("GameMusic", 0);
+                    ButtonPic[0].sprite = SpriteObjects[1];
+                    Musics[0].mute = true;
+                }
+                    break;
+
+            case "GameEfect":
+                PlayAudio(1);
+                if (PlayerPrefs.GetInt("GameEfect") == 0)
+                {
+                    PlayerPrefs.SetInt("GameEfect", 1);
+                    ButtonPic[1].sprite = SpriteObjects[2];
+
+                    for (int i = 0; i < Musics.Length; i++)
+                    {
+                        Musics [i].mute = false;
+                    }
+                }
+                else
+                {
+                    PlayerPrefs.SetInt("GameEfect", 0);
+                    ButtonPic[1].sprite = SpriteObjects[3];
+
+                    for (int i = 0; i < Musics.Length; i++)
+                    {
+                        Musics[i].mute = false;
+                    }
+                }
+                    break;
+
         }
+    }
+
+    void ScenesFirstOptions()
+    {
+        if (PlayerPrefs.GetInt("GameMusic") == 1)
+        {
+            ButtonPic[0].sprite = SpriteObjects[0];
+            Musics[0].mute = false;
+        }
+        else
+        {
+            ButtonPic[0].sprite = SpriteObjects[1];
+            Musics[0].mute = true;
+        }
+        
+
+        if (PlayerPrefs.GetInt("GameEfect") == 1)
+        {
+            ButtonPic[1].sprite = SpriteObjects[2];
+
+            for (int i = 0; i < Musics.Length; i++)
+            {
+                Musics[i].mute = false;
+            }
+        }
+        else
+        {
+            ButtonPic[1].sprite = SpriteObjects[3];
+
+            for (int i = 0; i < Musics.Length; i++)
+            {
+                Musics[i].mute = false;
+            }
+        }
+        
     }
 
     void OpenPanel(int Index)
