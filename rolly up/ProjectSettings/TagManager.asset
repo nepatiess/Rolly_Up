@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Cube
   - Plane
+  - Block
   layers:
   - Default
   - TransparentFX

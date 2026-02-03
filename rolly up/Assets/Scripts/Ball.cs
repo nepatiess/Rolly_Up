@@ -1,143 +1,181 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Ball : MonoBehaviour
 {
+    [Header("Temel Ayarlar")]
     [SerializeField] float gravitionalForce = 1.0f;
     [SerializeField] float range = 0.3f;
     [SerializeField] SphereCollider collisionCollider;
-    [SerializeField] Ball_Control ballKontrol;
     [SerializeField] Rigidbody rb;
+
+    [Header("Level ve Hedef Ayarları")]
+    [SerializeField] int totalLevelCubes = 100;
+    [SerializeField] Transform startLinePoint;
+    [SerializeField] Transform finishLineMaxPoint;
+
+    [Header("Yumuşak Bitiş Ayarları (Soft Landing)")]
+    [Tooltip("Topun maksimum hızı.")]
+    [SerializeField] float maxRollSpeed = 12f;
+
+    [Tooltip("Hedefe kaç metre kala yavaşlamaya başlasın?")]
+    [SerializeField] float brakingDistance = 20f; // Daha erken frenlemeye başlasın
+
+    [Tooltip("Topun durmadan hemen önceki en yavaş hızı (Çok düşük olmalı)")]
+    [SerializeField] float minCrawlSpeed = 0.5f; // 2 yerine 0.5 yaptık, sürünerek dursun
 
     Vector3 gravitionalDirecton;
     Collider[] cubes;
     int maxCubeNum = 15;
 
-    bool ballJumped;
-    bool WhereitComes;
-    bool HitTarget;
+    private List<GameObject> collectedCubesList = new List<GameObject>();
+    bool isRollingToTarget = false;
+    Vector3 targetPosition;
 
     void Start()
     {
-        
+        collectedCubesList.Clear();
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (ballJumped)
-        {
-            if (rb.velocity.magnitude < 0.15f && rb.velocity.magnitude != 0)
-            {
-                WhereitComes = true;
-                return;
-            }
-        }
-    }
-
-
 
     private void FixedUpdate()
     {
-        if(GameManager.Instance.isGameStart)
+        if (GameManager.Instance.isGameStart)
         {
             transform.Rotate(Vector3.forward, 400 * Time.fixedDeltaTime);
+            MagneticEffect();
+        }
+        else if (isRollingToTarget)
+        {
+            // --- İPEK GİBİ YUMUŞAK DURUŞ MANTIĞI ---
 
-            cubes = new Collider[maxCubeNum];
-            int sumOfCubesNum = Physics.OverlapSphereNonAlloc(transform.position, range, cubes);
+            float distance = targetPosition.z - transform.position.z;
 
-            for(int i = 0; i < sumOfCubesNum; i++)
+            // Stop mesafesini çok çok küçülttük (Milimetrik yanaşsın)
+            if (distance <= 0.05f)
             {
-                Rigidbody rb = cubes[i].GetComponent<Rigidbody>();
-                
-                if(rb != null)
+                StopBall();
+            }
+            else
+            {
+                float currentSpeed = maxRollSpeed;
+
+                if (distance < brakingDistance)
                 {
-                    gravitionalDirecton = new Vector3(transform.position.x, 0, transform.position.z) - cubes[i].transform.position;
-                    rb.AddForceAtPosition(gravitionalForce * gravitionalDirecton.normalized, transform.position);
+                    // 0 ile 1 arasında bir oran (1 = uzak, 0 = hedefte)
+                    float ratio = distance / brakingDistance;
+
+                    // MATEMATİKSEL SİHİR BURADA:
+                    // Mathf.Sqrt kullanarak hızı "kök" eğrisiyle düşürüyoruz.
+                    // Bu, topun başta hızlı yavaşlamasını, sona doğru ise çok yavaş süzülmesini sağlar.
+                    float curveFactor = Mathf.Sqrt(ratio);
+
+                    // Hızı min ve max arasında bu eğriye göre ayarla
+                    currentSpeed = Mathf.Lerp(minCrawlSpeed, maxRollSpeed, curveFactor);
                 }
+
+                // Hızı Uygula
+                Vector3 targetVel = rb.velocity;
+                targetVel.z = currentSpeed;
+                targetVel.x = 0;
+                rb.velocity = targetVel;
+
+                // Dönme hızını da aynı oranda yavaşlat ki kayıyormuş gibi görünmesin
+                float rotationSpeed = currentSpeed * 30f;
+                transform.Rotate(Vector3.forward, rotationSpeed * Time.fixedDeltaTime);
             }
-
-
-
-
-            /* Y�NTEM 2
-            cubes = Physics.OverlapSphere(transform.position, range);
-
-            for (int i = 0; i < cubes.Length; i++)
-            {
-                Rigidbody rb = cubes[i].GetComponent<Rigidbody>();
-
-                gravitionalDirecton = new Vector3(transform.position.x, 0, transform.position.z) - cubes[i].transform.position;
-                rb.AddForceAtPosition(gravitionalForce * gravitionalDirecton.normalized, transform.position);
-            }
-            */
         }
     }
 
+    void StopBall()
+    {
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        transform.position = new Vector3(transform.position.x, transform.position.y, targetPosition.z); // Tam noktaya "tık" diye oturt
+        isRollingToTarget = false;
 
+        CalculateAndFinish();
+    }
+
+    void MagneticEffect()
+    {
+        cubes = new Collider[maxCubeNum];
+        int sumOfCubesNum = Physics.OverlapSphereNonAlloc(transform.position, range, cubes);
+
+        for (int i = 0; i < sumOfCubesNum; i++)
+        {
+            if (cubes[i] == null) continue;
+            Rigidbody rbCube = cubes[i].GetComponent<Rigidbody>();
+
+            if (rbCube != null && !collectedCubesList.Contains(cubes[i].gameObject))
+            {
+                gravitionalDirecton = new Vector3(transform.position.x, 0, transform.position.z) - cubes[i].transform.position;
+                rbCube.AddForceAtPosition(gravitionalForce * gravitionalDirecton.normalized, transform.position);
+            }
+        }
+    }
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Cube"))
         {
-            other.attachedRigidbody.isKinematic = true;
-            other.gameObject.transform.SetParent(transform);
-            AddCube();
+            if (!collectedCubesList.Contains(other.gameObject))
+            {
+                collectedCubesList.Add(other.gameObject);
+                other.attachedRigidbody.isKinematic = true;
+                other.gameObject.transform.SetParent(transform);
+                AddCube();
+            }
         }
 
         if (other.CompareTag("Finish"))
         {
-            Transform[] AllChild = GetComponentsInChildren<Transform>();
-
             GameManager.Instance.isGameStart = false;
-            transform.SetParent(null);
+            ScatterCubes();
+
+            int realCount = collectedCubesList.Count;
+
+            // Görsel hedef belirleme (Yuvarlama yok)
+            float visualRatio = (float)realCount / (float)totalLevelCubes;
+            if (visualRatio > 1.0f) visualRatio = 1.0f;
+            if (visualRatio < 0.05f) visualRatio = 0.05f;
+
+            targetPosition = Vector3.Lerp(startLinePoint.position, finishLineMaxPoint.position, visualRatio);
+
             rb.isKinematic = false;
-
-            rb.AddForce(AllChild.Length * Time.deltaTime * Vector3.forward, ForceMode.Impulse);
-            ballJumped = true;
-            collisionCollider.enabled = false;
-
-            foreach (var item in AllChild)
-            {
-                if (item.gameObject.CompareTag("Cube"))
-                {
-                    item.gameObject.transform.SetParent(null);
-                    item.GetComponent<Rigidbody>().isKinematic = false;
-                }
-            }
-
-
-
-            /* Y�NTEM 2
-            // fiziksel i�lemler
-            for (int i = 0; i < AllChild.Length; i++)
-            {
-                if (AllChild[i].gameObject.CompareTag("Cube"))
-                {
-                    AllChild[i].gameObject.transform.SetParent(null);
-                    AllChild[i].GetComponent<Rigidbody>().isKinematic = false;
-                }
-            }
-            */
+            collisionCollider.enabled = true;
+            isRollingToTarget = true;
         }
     }
 
-    private void OnTriggerStay(Collider other)
+    void ScatterCubes()
     {
-
-        if (WhereitComes)
+        Transform[] AllChild = GetComponentsInChildren<Transform>();
+        foreach (var item in AllChild)
         {
-            if (!other.gameObject.CompareTag("Plane") && !other.gameObject.CompareTag("Cube") && !HitTarget)
+            if (item.gameObject.CompareTag("Cube"))
             {
-                HitTarget = true;
-                rb.velocity = Vector3.zero;
-                GameManager.Instance.GameOver(int.Parse(other.name));
+                item.SetParent(null);
+                Rigidbody cubeRb = item.GetComponent<Rigidbody>();
+                if (cubeRb != null)
+                {
+                    cubeRb.isKinematic = false;
+                    Vector3 explosionDir = new Vector3(Random.Range(-1f, 1f), 0.5f, Random.Range(-0.5f, 0.5f));
+                    cubeRb.AddForce(explosionDir * 5f, ForceMode.Impulse);
+                }
             }
         }
-        
     }
 
+    void CalculateAndFinish()
+    {
+        float rawRatio = (float)collectedCubesList.Count / (float)totalLevelCubes;
+        float scoreRatio = Mathf.Ceil(rawRatio * 10) / 10.0f;
+        int score = (int)(scoreRatio * 100);
+        if (score > 100) score = 100;
+
+        GameManager.Instance.GameOver(score);
+    }
 
     void AddCube()
     {
@@ -145,7 +183,6 @@ public class Ball : MonoBehaviour
         collisionCollider.radius += 0.0012f;
         transform.position = new Vector3(transform.position.x, transform.position.y + 0.0018f, transform.position.z);
     }
-
 
     private void OnDrawGizmos()
     {
