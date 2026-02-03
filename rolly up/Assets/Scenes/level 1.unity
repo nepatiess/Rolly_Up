@@ -23562,6 +23562,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isGameStart: 1
+  completedPer: 50
 --- !u!1 &635425794
 GameObject:
   m_ObjectHideFlags: 0
@@ -48774,7 +48775,7 @@ MonoBehaviour:
   finishLineMaxPoint: {fileID: 7852146629913044713}
   maxRollSpeed: 12
   brakingDistance: 22
-  minCrawlSpeed: 0.1
+  minCrawlSpeed: 0.01
 --- !u!1 &1349827584
 GameObject:
   m_ObjectHideFlags: 0

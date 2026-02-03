@@ -64,6 +64,7 @@
     <Compile Include="Assets\Scripts\LevelGenerator.cs" />
     <Compile Include="Assets\Scripts\CameraTrack.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
+    <Compile Include="Assets\Scripts\GameMenuManager.cs" />
     <Compile Include="Assets\Scripts\Ball_Control.cs" />
     <Compile Include="Assets\Scripts\Cube.cs" />
   </ItemGroup>
