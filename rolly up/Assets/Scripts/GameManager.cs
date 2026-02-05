@@ -1,6 +1,8 @@
+ï»¿using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
@@ -8,44 +10,62 @@ public class GameManager : MonoBehaviour
     bool gameOver;
     int SceneIndex;
     [SerializeField] int completedPer;
-    
+
     [SerializeField] GameObject[] Panels;
+
+    // UI ElemanlarÄ±
+    [SerializeField] TextMeshProUGUI SumPoints; // Toplam Puan
+    [SerializeField] TextMeshProUGUI SumCoins;  // Toplam Coin
+    [SerializeField] TextMeshProUGUI EarnedPoints; // Sadece o levelda kazanÄ±lan
+    [SerializeField] TextMeshProUGUI EarnedCoins;  // Sadece o levelda kazanÄ±lan
 
     [SerializeField] AudioSource[] Musics;
     [SerializeField] Image[] ButtonPic;
     [SerializeField] Sprite[] SpriteObjects;
 
-
     private float lastCrashTime = 0f;
 
     private void Awake()
     {
-        ScenesFirstOptions();
-        // Singleton yapýsýný saðlama alýyoruz
         if (Instance == null)
         {
             Instance = this;
         }
         else
         {
-            Destroy(gameObject); // Eðer sahnede baþka bir GameManager varsa yenisini sil
+            Destroy(gameObject);
             return;
         }
 
-        // Sahne baþladýðýnda oyun duruyor olmalý
         isGameStart = false;
+        gameOver = false;
         SceneIndex = SceneManager.GetActiveScene().buildIndex;
+
+        ScenesFirstOptions();
     }
 
-    // Diðer kodlarýn (GameOver, ButtonSettings vs.) ayný kalabilir.
-
-
-    public void GameOver(int EarnedPoints)
+    void Start()
     {
+        // Ã–NEMLÄ°: PlayerPrefs.DeleteAll() satÄ±rÄ±nÄ± sildik! 
+        // ArtÄ±k veriler oyun kapansa da silinmeyecek.
+
+        UpdateTotalUI(); // Oyun baÅŸlar baÅŸlamaz eski puanlarÄ± ekrana yazdÄ±rÄ±yoruz.
+    }
+
+    // Toplam puanlarÄ± ekranda gÃ¼ncelleyen yardÄ±mcÄ± fonksiyon
+    void UpdateTotalUI()
+    {
+        SumPoints.text = PlayerPrefs.GetInt("Record", 0).ToString();
+        SumCoins.text = PlayerPrefs.GetInt("Coin", 0).ToString();
+    }
+
+    public void GameOver(int EarnedPer)
+    {
+        if (gameOver) return;
         gameOver = true;
 
-        if (EarnedPoints >= completedPer)
-            Win(EarnedPoints);
+        if (EarnedPer >= completedPer)
+            Win(EarnedPer);
         else
             Lose();
     }
@@ -54,209 +74,109 @@ public class GameManager : MonoBehaviour
     {
         PlayAudio(7);
         OpenPanel(3);
-        PlayerPrefs.SetInt("Record", PlayerPrefs.GetInt("Record") + EarnedPer * 2);
-        PlayerPrefs.SetInt("Coin", PlayerPrefs.GetInt("Coin") + (EarnedPer * 2) / 10);
-        Debug.Log("Earned Points: " + EarnedPer * 2);
+
+        // Bu levelda kazanÄ±lanlar
+        int earnedPoints = EarnedPer * 2;
+        int earnedCoins = earnedPoints / 10;
+
+        // Eski verileri Ã§ek
+        int oldPoints = PlayerPrefs.GetInt("Record", 0);
+        int oldCoins = PlayerPrefs.GetInt("Coin", 0);
+
+        // Yeni verileri topla
+        int totalPoints = oldPoints + earnedPoints;
+        int totalCoins = oldCoins + earnedCoins;
+
+        // Kaydet
+        PlayerPrefs.SetInt("Record", totalPoints);
+        PlayerPrefs.SetInt("Coin", totalCoins);
+        PlayerPrefs.Save();
+
+        // UI GÃ¼ncelleme
+        EarnedPoints.text = "+" + earnedPoints.ToString();
+        EarnedCoins.text = "+" + earnedCoins.ToString();
+        SumPoints.text = totalPoints.ToString();
+        SumCoins.text = totalCoins.ToString();
     }
 
     void Lose()
     {
         PlayAudio(6);
         OpenPanel(4);
-        Debug.Log("Lose....");
+        UpdateTotalUI(); // Kaybetse bile toplam puanÄ± gÃ¶rsÃ¼n
     }
 
+    // --- DÄ°ÄžER FONKSÄ°YONLAR (AynÄ± KalÄ±yor) ---
     public void PlayAudio(int Index)
     {
-        // Güvenlik kontrolü (Index listenin dýþýna çýkmasýn)
         if (Index < 0 || Index >= Musics.Length) return;
-
-        // EÐER ÇALINACAK SES "ÇARPMA SESÝ" ÝSE (Index 4)
         if (Index == 4)
         {
-            // Þu anki zaman - Son çalýnan zaman farký 0.1 saniyeden büyük mü?
-            // Yani "En son 0.1 saniye önce mi çaldým?" kontrolü.
             if (Time.time - lastCrashTime > 0.1f)
             {
-                // PlayOneShot kullanýyoruz ki sesler üst üste binerse patlamasýn, daha doðal dursun
-                if (!Musics[Index].isPlaying)
-                {
-                    Musics[Index].Play();
-                }
-                else
-                {
-                    // Zaten çalýyorsa bile efekt olarak üstüne ekle (daha tok ses verir)
-                    // Ama Play() diyip baþa sarmýyoruz!
-                    Musics[Index].PlayOneShot(Musics[Index].clip);
-                }
-
-                lastCrashTime = Time.time; // Zamaný kaydet
-            }
-        }
-        // DÝÐER SESLER (FÝNÝSH, TOPLAMA VS.) NORMAL ÇALSIN
-        else
-        {
-            if (Index == 5) // Finish sesi gibi uzun sesler için
-            {
                 if (!Musics[Index].isPlaying) Musics[Index].Play();
-            }
-            else
-            {
-                Musics[Index].Play();
+                else Musics[Index].PlayOneShot(Musics[Index].clip);
+                lastCrashTime = Time.time;
             }
         }
+        else if (Index == 5)
+        {
+            if (!Musics[Index].isPlaying) Musics[Index].Play();
+        }
+        else { Musics[Index].Play(); }
     }
 
     public void ButtonSettings(string ButtonValue)
     {
         switch (ButtonValue)
         {
-            case "Stop":
-                PlayAudio(1);
-                OpenPanel(2);
-                Time.timeScale = 0;
-                break;
-
-            case "Continue":
-                PlayAudio(1);
-                ClosePanel(2);
-                Time.timeScale = 1;
-                break;
-
-            case "StartGame":
-                PlayAudio(1);
-                ClosePanel(0);
-                OpenPanel(1);
-                isGameStart = true;
-                break;
-
-            case "Retry":
-                PlayAudio(1);
-                SceneManager.LoadScene(SceneIndex);
-                Time.timeScale = 1;
-                break;
-
-            case "NextLevel":
-                PlayAudio(1);
-                SceneManager.LoadScene(SceneIndex + 1);
-                Time.timeScale = 1;
-                break;
-
-            case "Quit":
-                PlayAudio(1);
-                OpenPanel(5);
-                break;
-
-            case "Yes":
-                PlayAudio(1);
-                Application.Quit();
-                break;
-
-            case "No":
-                PlayAudio(1);
-                ClosePanel(5);
-                break;
-
-
-            case "GameMusic":
-                PlayAudio(1);
-                if (PlayerPrefs.GetInt("GameMusic") == 1)
-                {
-                    PlayerPrefs.SetInt("GameMusic", 0);
-                    ButtonPic[0].sprite = SpriteObjects[1];
-                    Musics[0].mute = true;
-                }
-                else
-                {
-                    PlayerPrefs.SetInt("GameMusic", 1);
-                    ButtonPic[0].sprite = SpriteObjects[0];
-                    Musics[0].mute = false;
-                }
-                break;
-
-            case "GameEfect":
-                PlayAudio(1);
-                if (PlayerPrefs.GetInt("GameEfect") == 1)
-                {
-                    PlayerPrefs.SetInt("GameEfect", 0);
-                    ButtonPic[1].sprite = SpriteObjects[3];
-
-                    for (int i = 1; i < Musics.Length; i++)
-                    {
-                        Musics[i].mute = true;
-                    }
-                }
-                else
-                {
-                    PlayerPrefs.SetInt("GameEfect", 1);
-                    ButtonPic[1].sprite = SpriteObjects[2];
-
-                    for (int i = 1; i < Musics.Length; i++)
-                    {
-                        Musics[i].mute = false;
-                    }
-                }
-                break;
-
+            case "Stop": Time.timeScale = 0; OpenPanel(2); PlayAudio(1); break;
+            case "Continue": Time.timeScale = 1; ClosePanel(2); PlayAudio(1); break;
+            case "StartGame": isGameStart = true; ClosePanel(0); OpenPanel(1); PlayAudio(1); break;
+            case "Retry": Time.timeScale = 1; SceneManager.LoadScene(SceneIndex); break;
+            case "NextLevel": Time.timeScale = 1; SceneManager.LoadScene(SceneIndex + 1); break;
+            case "Quit": OpenPanel(5); PlayAudio(1); break;
+            case "Yes": Application.Quit(); break;
+            case "No": ClosePanel(5); PlayAudio(1); break;
+            case "GameMusic": ToggleMusic(); break;
+            case "GameEfect": ToggleEffects(); break;
         }
     }
+
+    // MÃ¼zik ve Efekt kodlarÄ±nÄ± daha temiz hale getirmek iÃ§in ayÄ±rdÄ±m
+    void ToggleMusic()
+    {
+        int state = PlayerPrefs.GetInt("GameMusic") == 1 ? 0 : 1;
+        PlayerPrefs.SetInt("GameMusic", state);
+        ApplyAudioSettings();
+    }
+
+    void ToggleEffects()
+    {
+        int state = PlayerPrefs.GetInt("GameEfect") == 1 ? 0 : 1;
+        PlayerPrefs.SetInt("GameEfect", state);
+        ApplyAudioSettings();
+    }
+
     void ScenesFirstOptions()
     {
-        // Ýlk oyun açýlýþýnda varsayýlan deðerleri ayarla
-        if (!PlayerPrefs.HasKey("GameMusic"))
-        {
-            PlayerPrefs.SetInt("GameMusic", 1); // Varsayýlan olarak açýk
-        }
-
-        if (!PlayerPrefs.HasKey("GameEfect"))
-        {
-            PlayerPrefs.SetInt("GameEfect", 1); // Varsayýlan olarak açýk
-        }
-
-        // Müzik ayarlarýný uygula
-        if (PlayerPrefs.GetInt("GameMusic") == 1)
-        {
-            ButtonPic[0].sprite = SpriteObjects[0];
-            Musics[0].mute = false;
-            if (!Musics[0].isPlaying)
-            {
-                Musics[0].Play(); // Müziði baþlat
-            }
-        }
-        else
-        {
-            ButtonPic[0].sprite = SpriteObjects[1];
-            Musics[0].mute = true;
-        }
-
-        // Efekt sesleri ayarlarýný uygula
-        if (PlayerPrefs.GetInt("GameEfect") == 1)
-        {
-            ButtonPic[1].sprite = SpriteObjects[2];
-
-            for (int i = 1; i < Musics.Length; i++)
-            {
-                Musics[i].mute = false;
-            }
-        }
-        else
-        {
-            ButtonPic[1].sprite = SpriteObjects[3];
-
-            for (int i = 1; i < Musics.Length; i++)
-            {
-                Musics[i].mute = true;
-            }
-        }
+        if (!PlayerPrefs.HasKey("GameMusic")) PlayerPrefs.SetInt("GameMusic", 1);
+        if (!PlayerPrefs.HasKey("GameEfect")) PlayerPrefs.SetInt("GameEfect", 1);
+        ApplyAudioSettings();
     }
 
-    void OpenPanel(int Index)
+    void ApplyAudioSettings()
     {
-        Panels[Index].SetActive(true);
+        bool musicOn = PlayerPrefs.GetInt("GameMusic") == 1;
+        Musics[0].mute = !musicOn;
+        ButtonPic[0].sprite = musicOn ? SpriteObjects[0] : SpriteObjects[1];
+        if (musicOn && !Musics[0].isPlaying) Musics[0].Play();
+
+        bool effectOn = PlayerPrefs.GetInt("GameEfect") == 1;
+        ButtonPic[1].sprite = effectOn ? SpriteObjects[2] : SpriteObjects[3];
+        for (int i = 1; i < Musics.Length; i++) Musics[i].mute = !effectOn;
     }
 
-    void ClosePanel(int Index)
-    {
-        Panels[Index].SetActive(false);
-    }
+    void OpenPanel(int Index) => Panels[Index].SetActive(true);
+    void ClosePanel(int Index) => Panels[Index].SetActive(false);
 }
