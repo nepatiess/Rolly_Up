@@ -52,6 +52,7 @@ public class GameManager : MonoBehaviour
 
     void Win(int EarnedPer)
     {
+        PlayAudio(7);
         OpenPanel(3);
         PlayerPrefs.SetInt("Record", PlayerPrefs.GetInt("Record") + EarnedPer * 2);
         PlayerPrefs.SetInt("Coin", PlayerPrefs.GetInt("Coin") + (EarnedPer * 2) / 10);
@@ -60,6 +61,7 @@ public class GameManager : MonoBehaviour
 
     void Lose()
     {
+        PlayAudio(6);
         OpenPanel(4);
         Debug.Log("Lose....");
     }
