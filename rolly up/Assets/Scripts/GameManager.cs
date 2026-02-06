@@ -216,4 +216,16 @@ public class GameManager : MonoBehaviour
 
     void OpenPanel(int Index) => Panels[Index].SetActive(true);
     void ClosePanel(int Index) => Panels[Index].SetActive(false);
+
+    public void AddCoinUI(int value)
+    {
+        // Toplam coin
+        int totalCoin = PlayerPrefs.GetInt("Coin", 0);
+        SumCoins.text = totalCoin.ToString();
+
+        // Bu levelda kazanılan coin
+        if (EarnedCoins != null)
+            EarnedCoins.text = "+" + value.ToString();
+    }
+
 }
