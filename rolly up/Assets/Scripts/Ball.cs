@@ -8,16 +8,11 @@ public class Ball : MonoBehaviour
     [SerializeField] float range = 0.3f;
     [SerializeField] SphereCollider collisionCollider;
     [SerializeField] Rigidbody rb;
-
-
     [SerializeField] int totalLevelCubes = 100;
     [SerializeField] Transform startLinePoint;
     [SerializeField] Transform finishLineMaxPoint;
-
     [SerializeField] float maxRollSpeed = 12f;
-
     [SerializeField] float brakingDistance = 20f;
-
     [SerializeField] float minCrawlSpeed = 0.5f;
 
     Vector3 gravitionalDirecton;
@@ -25,6 +20,7 @@ public class Ball : MonoBehaviour
     int maxCubeNum = 15;
 
     private List<GameObject> collectedCubesList = new List<GameObject>();
+
     bool isRollingToTarget = false;
     Vector3 targetPosition;
 
@@ -42,7 +38,6 @@ public class Ball : MonoBehaviour
         }
         else if (isRollingToTarget)
         {
-
             float distance = targetPosition.z - transform.position.z;
 
             if (distance <= 0.05f)
@@ -56,9 +51,7 @@ public class Ball : MonoBehaviour
                 if (distance < brakingDistance)
                 {
                     float ratio = distance / brakingDistance;
-
                     float curveFactor = Mathf.Sqrt(ratio);
-
                     currentSpeed = Mathf.Lerp(minCrawlSpeed, maxRollSpeed, curveFactor);
                 }
 
@@ -77,7 +70,7 @@ public class Ball : MonoBehaviour
     {
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
-        transform.position = new Vector3(transform.position.x, transform.position.y, targetPosition.z); 
+        transform.position = new Vector3(transform.position.x, transform.position.y, targetPosition.z);
         isRollingToTarget = false;
 
         CalculateAndFinish();
@@ -91,6 +84,7 @@ public class Ball : MonoBehaviour
         for (int i = 0; i < sumOfCubesNum; i++)
         {
             if (cubes[i] == null) continue;
+
             Rigidbody rbCube = cubes[i].GetComponent<Rigidbody>();
 
             if (rbCube != null && !collectedCubesList.Contains(cubes[i].gameObject))
@@ -110,6 +104,7 @@ public class Ball : MonoBehaviour
                 collectedCubesList.Add(other.gameObject);
                 other.attachedRigidbody.isKinematic = true;
                 other.gameObject.transform.SetParent(transform);
+
                 AddCube();
                 GameManager.Instance.PlayAudio(2);
             }
@@ -117,16 +112,13 @@ public class Ball : MonoBehaviour
 
         if (other.CompareTag("Finish"))
         {
-            // --- SES KODU BURAYA EKLENDİ ---
-            // Inspector'dan girdiğin index numarası buraya otomatik gelir.
             GameManager.Instance.PlayAudio(5);
-
             GameManager.Instance.isGameStart = false;
+
             ScatterCubes();
 
             int realCount = collectedCubesList.Count;
 
-            // Görsel hedef belirleme (Yuvarlama yok)
             float visualRatio = (float)realCount / (float)totalLevelCubes;
             if (visualRatio > 1.0f) visualRatio = 1.0f;
             if (visualRatio < 0.05f) visualRatio = 0.05f;
@@ -142,15 +134,18 @@ public class Ball : MonoBehaviour
     void ScatterCubes()
     {
         Transform[] AllChild = GetComponentsInChildren<Transform>();
+
         foreach (var item in AllChild)
         {
             if (item.gameObject.CompareTag("Cube"))
             {
                 item.SetParent(null);
+
                 Rigidbody cubeRb = item.GetComponent<Rigidbody>();
                 if (cubeRb != null)
                 {
                     cubeRb.isKinematic = false;
+
                     Vector3 explosionDir = new Vector3(Random.Range(-1f, 1f), 0.5f, Random.Range(-0.5f, 0.5f));
                     cubeRb.AddForce(explosionDir * 5f, ForceMode.Impulse);
                 }
@@ -162,6 +157,7 @@ public class Ball : MonoBehaviour
     {
         float rawRatio = (float)collectedCubesList.Count / (float)totalLevelCubes;
         float scoreRatio = Mathf.Ceil(rawRatio * 10) / 10.0f;
+
         int score = (int)(scoreRatio * 100);
         if (score > 100) score = 100;
 
@@ -173,6 +169,24 @@ public class Ball : MonoBehaviour
         range += 0.0009f;
         collisionCollider.radius += 0.0012f;
         transform.position = new Vector3(transform.position.x, transform.position.y + 0.0018f, transform.position.z);
+    }
+
+    // *** YENİ FONKSİYON: Küp kaybedildiğinde çağrılacak ***
+    public void RemoveCube(GameObject cube)
+    {
+        if (collectedCubesList.Contains(cube))
+        {
+            collectedCubesList.Remove(cube);
+
+            // Küp kaybedildiğinde küreyi küçült
+            range -= 0.0009f;
+            collisionCollider.radius -= 0.0012f;
+            transform.position = new Vector3(transform.position.x, transform.position.y - 0.0018f, transform.position.z);
+
+            // Range ve radius negatife düşmesin
+            if (range < 0.1f) range = 0.1f;
+            if (collisionCollider.radius < 0.1f) collisionCollider.radius = 0.1f;
+        }
     }
 
     private void OnDrawGizmos()
