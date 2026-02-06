@@ -13,9 +13,15 @@ public class GameMenuManager : MonoBehaviour
             PlayerPrefs.SetInt("Record", 100);
             PlayerPrefs.SetInt("Audio", 1);
             PlayerPrefs.SetInt("EfectAudio", 1);
-
         }
-
-        SceneManager.LoadScene(PlayerPrefs.GetInt("FinalLevel"));
     }
+
+    public void PlayGame()
+    {
+        int levelIndex = PlayerPrefs.GetInt("FinalLevel");
+        Debug.Log("Gidilecek sahne index: " + levelIndex);
+        SceneManager.LoadScene(levelIndex);
+    }
+
+
 }
