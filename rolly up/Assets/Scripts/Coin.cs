@@ -17,7 +17,7 @@ public class Coin : MonoBehaviour
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.AddCoinUI(coinValue);
-                GameManager.Instance.PlayAudio(3); // coin sesi (indexi ayarla)
+                GameManager.Instance.PlayAudio(3); 
             }
 
             Destroy(gameObject);
