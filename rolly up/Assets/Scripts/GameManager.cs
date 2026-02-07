@@ -138,6 +138,11 @@ public class GameManager : MonoBehaviour
     {
         switch (ButtonValue)
         {
+            case "MainMenu":
+                Time.timeScale = 1;
+                SceneManager.LoadScene(0); // MainMenu (index 0)
+                break;
+
             case "Stop":
                 Time.timeScale = 0;
                 OpenPanel(2);
@@ -173,9 +178,23 @@ public class GameManager : MonoBehaviour
                     SceneManager.LoadScene(0); // Sahneler bittiyse menüye dön
                 break;
 
-            case "Quit": OpenPanel(5); PlayAudio(1); break;
-            case "Yes": Application.Quit(); break;
-            case "No": ClosePanel(5); PlayAudio(1); break;
+            case "Quit":
+                Time.timeScale = 0;      // Oyunu durdur
+                OpenPanel(5);            // Emin misin paneli
+                PlayAudio(1);
+                break;
+
+            case "Yes":
+                Time.timeScale = 1;
+                SceneManager.LoadScene(0); // MainMenu'ye dön
+                break;
+
+            case "No":
+                ClosePanel(5);
+                Time.timeScale = 1;
+                PlayAudio(1);
+                break;
+
             case "GameMusic": ToggleMusic(); break;
             case "GameEfect": ToggleEffects(); break;
         }
