@@ -24,9 +24,26 @@ public class Ball : MonoBehaviour
     bool isRollingToTarget = false;
     Vector3 targetPosition;
 
+    // ===== BOOSTLAR =====
+    public bool shieldActive;
+    public bool magnetActive;
+    public bool slowActive;
+    public bool percentActive;
+
     void Start()
     {
         collectedCubesList.Clear();
+
+        magnetActive = PlayerPrefs.GetInt("Boost_Magnet", 0) == 1;
+        shieldActive = PlayerPrefs.GetInt("Boost_Shield", 0) == 1;
+        slowActive = PlayerPrefs.GetInt("Boost_Slow", 0) == 1;
+        percentActive = PlayerPrefs.GetInt("Boost_Percent", 0) == 1;
+
+
+        if (slowActive)
+        {
+            Time.timeScale = 0.6f; // oyunu yavaşlat
+        }
     }
 
     private void FixedUpdate()
@@ -34,7 +51,10 @@ public class Ball : MonoBehaviour
         if (GameManager.Instance.isGameStart)
         {
             transform.Rotate(Vector3.forward, 400 * Time.fixedDeltaTime);
-            MagneticEffect();
+
+            // SADECE MIKNATIS VARSA ÇEKSİN
+            if (magnetActive)
+                MagneticEffect();
         }
         else if (isRollingToTarget)
         {
@@ -156,12 +176,25 @@ public class Ball : MonoBehaviour
     void CalculateAndFinish()
     {
         float rawRatio = (float)collectedCubesList.Count / (float)totalLevelCubes;
+
+        //  YÜZDE BOOST VARSA BONUS
+        if (percentActive)
+            rawRatio += 0.1f; // +10%
+
         float scoreRatio = Mathf.Ceil(rawRatio * 10) / 10.0f;
 
         int score = (int)(scoreRatio * 100);
         if (score > 100) score = 100;
 
         GameManager.Instance.GameOver(score);
+
+        // boostları temizle
+        PlayerPrefs.DeleteKey("Boost_Magnet");
+        PlayerPrefs.DeleteKey("Boost_Shield");
+        PlayerPrefs.DeleteKey("Boost_Slow");
+        PlayerPrefs.DeleteKey("Boost_Percent");
+
+        Time.timeScale = 1f;
     }
 
     void AddCube()
@@ -171,19 +204,16 @@ public class Ball : MonoBehaviour
         transform.position = new Vector3(transform.position.x, transform.position.y + 0.0018f, transform.position.z);
     }
 
-    // *** YENİ FONKSİYON: Küp kaybedildiğinde çağrılacak ***
     public void RemoveCube(GameObject cube)
     {
         if (collectedCubesList.Contains(cube))
         {
             collectedCubesList.Remove(cube);
 
-            // Küp kaybedildiğinde küreyi küçült
             range -= 0.0009f;
             collisionCollider.radius -= 0.0012f;
             transform.position = new Vector3(transform.position.x, transform.position.y - 0.0018f, transform.position.z);
 
-            // Range ve radius negatife düşmesin
             if (range < 0.1f) range = 0.1f;
             if (collisionCollider.radius < 0.1f) collisionCollider.radius = 0.1f;
         }

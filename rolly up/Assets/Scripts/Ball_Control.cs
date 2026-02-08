@@ -11,7 +11,6 @@ public class Ball_Control : MonoBehaviour
     [Header("Touch Control")]
     [SerializeField] float touchSensitivity = 0.015f; // Çok daha hassas
     [SerializeField] float dragSpeed = 8f; // Sürükleme hýzý
-    [SerializeField] float returnSpeed = 5f; // Parmak kalktýðýnda merkeze dönüþ
 
     private Vector3 targetPosition;
     private bool isDragging = false;

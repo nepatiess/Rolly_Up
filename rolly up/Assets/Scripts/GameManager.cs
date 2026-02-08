@@ -24,6 +24,13 @@ public class GameManager : MonoBehaviour
     [SerializeField] Image[] ButtonPic;
     [SerializeField] Sprite[] SpriteObjects;
 
+    [Header("Boost Prices")]
+    [SerializeField] int magnetPrice = 50;
+    [SerializeField] int shieldPrice = 75;
+    [SerializeField] int slowPrice = 40;
+    [SerializeField] int percentPrice = 60;
+
+
     private float lastCrashTime = 0f;
 
     private void Awake()
@@ -245,6 +252,46 @@ public class GameManager : MonoBehaviour
         // Bu levelda kazanılan coin
         if (EarnedCoins != null)
             EarnedCoins.text = "+" + value.ToString();
+    }
+
+    public void BuyMagnet()
+    {
+        BuyBoost("Boost_Magnet", magnetPrice);
+    }
+
+    public void BuyShield()
+    {
+        BuyBoost("Boost_Shield", shieldPrice);
+    }
+
+    public void BuySlow()
+    {
+        BuyBoost("Boost_Slow", slowPrice);
+    }
+
+    public void BuyPercent()
+    {
+        BuyBoost("Boost_Percent", percentPrice);
+    }
+
+    void BuyBoost(string boostKey, int price)
+    {
+        int coin = PlayerPrefs.GetInt("Coin", 0);
+
+        if (coin >= price)
+        {
+            coin -= price;
+            PlayerPrefs.SetInt("Coin", coin);
+            PlayerPrefs.SetInt(boostKey, 1); // boostu aktif et
+            PlayerPrefs.Save();
+
+            UpdateTotalUI(); // coin UI güncelle
+            Debug.Log(boostKey + " satın alındı");
+        }
+        else
+        {
+            Debug.Log("Yetersiz coin!");
+        }
     }
 
 }
