@@ -15,21 +15,12 @@ public class GameManager : MonoBehaviour
 
     // UI Elemanları
     [SerializeField] TextMeshProUGUI SumPoints;    // Toplam Puan
-    [SerializeField] TextMeshProUGUI SumCoins;     // Toplam Coin
     [SerializeField] TextMeshProUGUI EarnedPoints;  // Sadece o levelda kazanılan
-    [SerializeField] TextMeshProUGUI EarnedCoins;   // Sadece o levelda kazanılan
     [SerializeField] TextMeshProUGUI LevelStage;    // "Level 1", "Level 2" yazısı
 
     [SerializeField] AudioSource[] Musics;
     [SerializeField] Image[] ButtonPic;
     [SerializeField] Sprite[] SpriteObjects;
-
-    [Header("Boost Prices")]
-    [SerializeField] int magnetPrice = 50;
-    [SerializeField] int shieldPrice = 75;
-    [SerializeField] int slowPrice = 40;
-    [SerializeField] int percentPrice = 60;
-
 
     private float lastCrashTime = 0f;
 
@@ -75,7 +66,6 @@ public class GameManager : MonoBehaviour
     void UpdateTotalUI()
     {
         SumPoints.text = PlayerPrefs.GetInt("Record", 0).ToString();
-        SumCoins.text = PlayerPrefs.GetInt("Coin", 0).ToString();
     }
 
     public void GameOver(int EarnedPer)
@@ -96,22 +86,16 @@ public class GameManager : MonoBehaviour
         if (LevelStage != null) LevelStage.gameObject.SetActive(false); // Kazanma ekranında gizle
 
         int earnedPoints = EarnedPer * 2;
-        int earnedCoins = earnedPoints / 10;
 
         int oldPoints = PlayerPrefs.GetInt("Record", 0);
-        int oldCoins = PlayerPrefs.GetInt("Coin", 0);
 
         int totalPoints = oldPoints + earnedPoints;
-        int totalCoins = oldCoins + earnedCoins;
 
         PlayerPrefs.SetInt("Record", totalPoints);
-        PlayerPrefs.SetInt("Coin", totalCoins);
         PlayerPrefs.Save();
 
         EarnedPoints.text = "+" + earnedPoints.ToString();
-        EarnedCoins.text = "+" + earnedCoins.ToString();
         SumPoints.text = totalPoints.ToString();
-        SumCoins.text = totalCoins.ToString();
     }
 
     void Lose()
@@ -242,56 +226,5 @@ public class GameManager : MonoBehaviour
 
     void OpenPanel(int Index) => Panels[Index].SetActive(true);
     void ClosePanel(int Index) => Panels[Index].SetActive(false);
-
-    public void AddCoinUI(int value)
-    {
-        // Toplam coin
-        int totalCoin = PlayerPrefs.GetInt("Coin", 0);
-        SumCoins.text = totalCoin.ToString();
-
-        // Bu levelda kazanılan coin
-        if (EarnedCoins != null)
-            EarnedCoins.text = "+" + value.ToString();
-    }
-
-    public void BuyMagnet()
-    {
-        BuyBoost("Boost_Magnet", magnetPrice);
-    }
-
-    public void BuyShield()
-    {
-        BuyBoost("Boost_Shield", shieldPrice);
-    }
-
-    public void BuySlow()
-    {
-        BuyBoost("Boost_Slow", slowPrice);
-    }
-
-    public void BuyPercent()
-    {
-        BuyBoost("Boost_Percent", percentPrice);
-    }
-
-    void BuyBoost(string boostKey, int price)
-    {
-        int coin = PlayerPrefs.GetInt("Coin", 0);
-
-        if (coin >= price)
-        {
-            coin -= price;
-            PlayerPrefs.SetInt("Coin", coin);
-            PlayerPrefs.SetInt(boostKey, 1); // boostu aktif et
-            PlayerPrefs.Save();
-
-            UpdateTotalUI(); // coin UI güncelle
-            Debug.Log(boostKey + " satın alındı");
-        }
-        else
-        {
-            Debug.Log("Yetersiz coin!");
-        }
-    }
 
 }

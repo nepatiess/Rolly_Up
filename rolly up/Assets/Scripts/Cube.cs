@@ -8,26 +8,15 @@ public class Cube : MonoBehaviour
     {
         if (other.CompareTag("Block")) // Engele çarparsa
         {
+            // Ball'a bu küpün kaybedildiðini bildir
             Ball ball = FindObjectOfType<Ball>();
             if (ball != null)
             {
-                //  KALKAN AKTÝFSE KÜP DÜÞMESÝN
-                if (ball.shieldActive)
-                {
-                    // sadece çarpma sesi çal (istersen)
-                    if (GameManager.Instance != null)
-                    {
-                        GameManager.Instance.PlayAudio(4);
-                    }
-                    return; // burda çýk  aþaðýsý çalýþmaz
-                }
-
-                //  Kalkan yoksa küp düþsün
                 ball.RemoveCube(gameObject);
             }
 
             // Küpü toptan ayýr
-            transform.SetParent(null);
+            gameObject.transform.SetParent(null);
 
             // Fizik ekle düþsün
             Rigidbody rb = GetComponent<Rigidbody>();
@@ -36,7 +25,7 @@ public class Cube : MonoBehaviour
                 rb.isKinematic = false;
             }
 
-            // Çarpma sesi
+            // Çarpma sesi çal
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.PlayAudio(4);

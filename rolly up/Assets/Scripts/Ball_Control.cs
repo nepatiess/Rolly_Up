@@ -1,55 +1,33 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class Ball_Control : MonoBehaviour
 {
-    [Header("Movement Settings")]
     [SerializeField] float moveBorderX = 2.5f;
     [SerializeField] float forwardSpeed = 5f;
+    [SerializeField] float touchSensitivity = 0.015f;
+    [SerializeField] float dragSpeed = 8f;
 
-    [Header("Touch Control")]
-    [SerializeField] float touchSensitivity = 0.015f; // Çok daha hassas
-    [SerializeField] float dragSpeed = 8f; // Sürükleme hýzý
+    Vector3 targetPosition;
+    bool isDragging;
+    float lastTouchX;
 
-    private Vector3 targetPosition;
-    private bool isDragging = false;
-    private float lastTouchX;
-
-    private void Start()
+    void Start()
     {
         targetPosition = transform.position;
     }
 
-    private void FixedUpdate()
+    void FixedUpdate()
     {
-        // 1. KONTROL: Oyun baþlamadýysa dur
-        if (!GameManager.Instance.isGameStart)
-        {
-            return;
-        }
+        if (!GameManager.Instance.isGameStart) return;
 
-        // 2. ÝLERÝ GÝTME
         transform.Translate(forwardSpeed * Time.fixedDeltaTime * Vector3.left);
-
-        // 3. SAÐ-SOL HAREKETÝ
         HandleTouchControl();
 
-        // Hedef pozisyona yumuþak geçiþ
-        float smoothX = Mathf.Lerp(
-            transform.position.x,
-            targetPosition.x,
-            dragSpeed * Time.fixedDeltaTime
-        );
-
-        transform.position = new Vector3(
-            smoothX,
-            transform.position.y,
-            transform.position.z
-        );
+        float smoothX = Mathf.Lerp(transform.position.x, targetPosition.x, dragSpeed * Time.fixedDeltaTime);
+        transform.position = new Vector3(smoothX, transform.position.y, transform.position.z);
     }
 
-    private void HandleTouchControl()
+    void HandleTouchControl()
     {
         if (Input.touchCount > 0)
         {
@@ -62,23 +40,14 @@ public class Ball_Control : MonoBehaviour
             }
             else if (touch.phase == TouchPhase.Moved && isDragging)
             {
-                // Parmaðýn hareket ettiði mesafe (pixel cinsinden)
                 float deltaX = touch.position.x - lastTouchX;
-
-                // Hassasiyet ile çarp ve hedef pozisyona ekle
-                float movement = deltaX * touchSensitivity;
-
-                targetPosition.x += movement;
+                targetPosition.x += deltaX * touchSensitivity;
                 targetPosition.x = Mathf.Clamp(targetPosition.x, -moveBorderX, moveBorderX);
-
                 lastTouchX = touch.position.x;
             }
-            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
-            {
+            else if (touch.phase == TouchPhase.Ended)
                 isDragging = false;
-            }
         }
-        // Mouse desteði (test için)
         else if (Input.GetMouseButton(0))
         {
             if (Input.GetMouseButtonDown(0))
@@ -89,17 +58,12 @@ public class Ball_Control : MonoBehaviour
             else if (isDragging)
             {
                 float deltaX = Input.mousePosition.x - lastTouchX;
-                float movement = deltaX * touchSensitivity;
-
-                targetPosition.x += movement;
+                targetPosition.x += deltaX * touchSensitivity;
                 targetPosition.x = Mathf.Clamp(targetPosition.x, -moveBorderX, moveBorderX);
-
                 lastTouchX = Input.mousePosition.x;
             }
         }
         else if (Input.GetMouseButtonUp(0))
-        {
             isDragging = false;
-        }
     }
 }
